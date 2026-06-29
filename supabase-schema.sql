@@ -7,7 +7,7 @@ create table if not exists public.form_studio_documents (
 alter table public.form_studio_documents enable row level security;
 
 drop policy if exists "Public can read form studio data" on public.form_studio_documents;
-create policy "Public can read form studio data"Q
+create policy "Public can read form studio data"
 on public.form_studio_documents
 for select
 to anon

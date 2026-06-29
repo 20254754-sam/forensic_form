@@ -1151,7 +1151,7 @@
   box-shadow: var(--shadow);
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1220px) {
   .app-shell {
     height: auto;
     overflow-x: hidden;
