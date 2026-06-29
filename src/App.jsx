@@ -1292,7 +1292,7 @@ function QuestionEditor({
       {showOptions && (
         <div className="option-list">
           {question.options.map((option) => (
-            <div className="option-row" key={option.id}>
+            <div className={`option-row ${showChoiceKey ? 'has-answer-key' : ''}`} key={option.id}>
               {showChoiceKey && (
                 <input
                   type={question.type === 'checkboxes' ? 'checkbox' : 'radio'}
@@ -1308,7 +1308,11 @@ function QuestionEditor({
                 disabled={question.type === 'yesno'}
               />
               {question.type !== 'yesno' && (
-                <button type="button" onClick={() => deleteOption(question, option.id)}>
+                <button
+                  type="button"
+                  className="option-action-button"
+                  onClick={() => deleteOption(question, option.id)}
+                >
                   Remove
                 </button>
               )}
@@ -1316,9 +1320,12 @@ function QuestionEditor({
           ))}
 
           {question.type !== 'yesno' && (
-            <button type="button" className="text-button" onClick={() => addOption(question)}>
-              Add option
-            </button>
+            <div className="option-add-row">
+              <span aria-hidden="true"></span>
+              <button type="button" className="text-button option-action-button" onClick={() => addOption(question)}>
+                Add option
+              </button>
+            </div>
           )}
         </div>
       )}

@@ -575,16 +575,36 @@
 
 .option-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 260px);
   align-items: center;
+  gap: 10px;
+}
+
+.option-row.has-answer-key {
+  grid-template-columns: auto minmax(0, 1fr) minmax(160px, 260px);
+}
+
+.option-action-button {
+  width: 100%;
+  min-width: 0;
+}
+
+.option-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 260px);
   gap: 10px;
 }
 
 .option-row input[type='radio'],
 .option-row input[type='checkbox'],
 .choice-row input {
+  flex: 0 0 18px;
   width: 18px;
+  min-width: 18px;
   height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
   accent-color: var(--green);
 }
 
@@ -669,6 +689,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
+  overflow-y: auto;
   background: rgba(0, 7, 4, 0.72);
   backdrop-filter: blur(10px);
 }
@@ -707,19 +728,39 @@
 
 .question-picker {
   width: min(560px, 100%);
+  max-height: min(720px, calc(100svh - 40px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(4, 18, 12, 0.96);
   box-shadow: var(--shadow);
+  scrollbar-color: rgba(200, 240, 210, 0.38) transparent;
+  scrollbar-width: thin;
+}
+
+.question-picker::-webkit-scrollbar {
+  width: 8px;
+}
+
+.question-picker::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(200, 240, 210, 0.32);
 }
 
 .question-picker-head {
+  position: sticky;
+  top: -20px;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 16px;
+  margin: -20px -20px 16px;
+  padding: 20px;
+  background: rgba(4, 18, 12, 0.96);
+  border-bottom: 1px solid rgba(200, 240, 210, 0.12);
 }
 
 .question-picker h2 {
@@ -1664,11 +1705,23 @@
   }
 
   .option-row {
+    grid-template-columns: 1fr;
+  }
+
+  .option-row.has-answer-key {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .option-row button {
+  .option-row.has-answer-key .option-action-button {
     grid-column: 2;
+  }
+
+  .option-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .option-add-row span {
+    display: none;
   }
 
   .rating-row {
@@ -1677,6 +1730,22 @@
 
   .builder-tools {
     display: none;
+  }
+
+  .modal-backdrop {
+    align-items: start;
+    padding: 14px;
+  }
+
+  .question-picker {
+    max-height: calc(100svh - 28px);
+    padding: 16px;
+  }
+
+  .question-picker-head {
+    top: -16px;
+    margin: -16px -16px 14px;
+    padding: 16px;
   }
 
   .add-question-card {
