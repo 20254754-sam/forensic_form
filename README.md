@@ -4,19 +4,57 @@ A mobile-first interview form builder for UC interview work, surveys, and quiz-s
 
 ## Current Status
 
-- Works with local storage for now.
+- Stores forms and responses in Supabase.
 - Supports creator, editor, and respondent links.
 - Supports form and quiz modes.
 - Supports required questions, scoring, feedback, and saved responses.
 - Uses a UC-inspired green and black interface.
-- Ready for Supabase integration later.
+- Ready for public testing through GitHub Pages.
 
 ## Tech Stack
 
 - React
 - Vite
-- Local storage
+- Supabase
 - CSS responsive layout
+
+## Supabase Setup
+
+Open your Supabase project SQL editor and run:
+
+```sql
+create table if not exists public.form_studio_documents (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.form_studio_documents enable row level security;
+
+drop policy if exists "Public can read form studio data" on public.form_studio_documents;
+create policy "Public can read form studio data"
+on public.form_studio_documents
+for select
+to anon
+using (true);
+
+drop policy if exists "Public can create form studio data" on public.form_studio_documents;
+create policy "Public can create form studio data"
+on public.form_studio_documents
+for insert
+to anon
+with check (true);
+
+drop policy if exists "Public can update form studio data" on public.form_studio_documents;
+create policy "Public can update form studio data"
+on public.form_studio_documents
+for update
+to anon
+using (true)
+with check (true);
+```
+
+The same SQL is also saved in `supabase-schema.sql`.
 
 ## Run Locally
 
@@ -56,10 +94,15 @@ npm run build
 
 After pushing to GitHub, send your teammates the repository link.
 
-For live testing in a browser, deploy the repo to Vercel or Netlify.
+Live link:
+
+```text
+https://20254754-sam.github.io/forensic_form/
+```
+
+If the link shows a GitHub Pages setup message, open the repository settings, go to Pages, and set Source to GitHub Actions.
 
 ## Future Work
 
-- Connect Supabase for database storage.
 - Add authentication for form creators.
 - Add APK packaging after the web version is stable.

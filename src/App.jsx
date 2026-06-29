@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { SUPABASE_DOCUMENT_ID, supabase } from './supabaseClient'
 import ucSeal from './assets/UC_Official_Seal.png'
 import './App.css'
 
-const STORAGE_KEY = 'formStudioLocalData'
 const HISTORY_LIMIT = 50
 
 const choiceTypes = ['multiple', 'checkboxes', 'dropdown']
@@ -103,24 +103,8 @@ function getStarterData() {
   }
 }
 
-function readStoredData() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-
-    if (!saved) {
-      return getStarterData()
-    }
-
-    const parsed = JSON.parse(saved)
-
-    if (!Array.isArray(parsed.forms) || !Array.isArray(parsed.responses)) {
-      return getStarterData()
-    }
-
-    return parsed
-  } catch {
-    return getStarterData()
-  }
+function isValidData(value) {
+  return Boolean(value && Array.isArray(value.forms) && Array.isArray(value.responses))
 }
 
 function parseAccessFromHash() {
@@ -219,9 +203,12 @@ function scoreResponse(form, answers) {
 }
 
 function App() {
-  const [data, setData] = useState(readStoredData)
+  const [data, setData] = useState(null)
+  const [isLoadingData, setIsLoadingData] = useState(true)
+  const [syncError, setSyncError] = useState('')
+  const [remoteReady, setRemoteReady] = useState(false)
   const [hashAccess, setHashAccess] = useState(parseAccessFromHash)
-  const [activeFormId, setActiveFormId] = useState(() => hashAccess?.formId || data.forms[0]?.id || '')
+  const [activeFormId, setActiveFormId] = useState(() => hashAccess?.formId || '')
   const [view, setView] = useState(() => (hashAccess?.role === 'respondent' ? 'respond' : 'builder'))
   const [answerDraft, setAnswerDraft] = useState({})
   const [submitResult, setSubmitResult] = useState(null)
@@ -233,8 +220,82 @@ function App() {
   const [redoStack, setRedoStack] = useState([])
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-  }, [data])
+    let ignore = false
+
+    async function loadData() {
+      setIsLoadingData(true)
+      setSyncError('')
+
+      const { data: row, error } = await supabase
+        .from('form_studio_documents')
+        .select('data')
+        .eq('id', SUPABASE_DOCUMENT_ID)
+        .maybeSingle()
+
+      if (ignore) {
+        return
+      }
+
+      if (error) {
+        setData(getStarterData())
+        setSyncError('Supabase is not ready. Run the SQL schema from README, then refresh.')
+        setIsLoadingData(false)
+        return
+      }
+
+      if (isValidData(row?.data)) {
+        setActiveFormId(hashAccess?.formId || row.data.forms[0]?.id || '')
+        setData(row.data)
+        setRemoteReady(true)
+        setIsLoadingData(false)
+        return
+      }
+
+      const starterData = getStarterData()
+      const { error: insertError } = await supabase
+        .from('form_studio_documents')
+        .insert({
+          id: SUPABASE_DOCUMENT_ID,
+          data: starterData,
+        })
+
+      if (ignore) {
+        return
+      }
+
+      setActiveFormId(hashAccess?.formId || starterData.forms[0]?.id || '')
+      setData(starterData)
+      setRemoteReady(!insertError)
+      setSyncError(insertError ? 'Supabase is not ready. Run the SQL schema from README, then refresh.' : '')
+      setIsLoadingData(false)
+    }
+
+    loadData()
+
+    return () => {
+      ignore = true
+    }
+  }, [hashAccess])
+
+  useEffect(() => {
+    if (!data || !remoteReady) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      const { error } = await supabase
+        .from('form_studio_documents')
+        .upsert({
+          id: SUPABASE_DOCUMENT_ID,
+          data,
+          updated_at: new Date().toISOString(),
+        })
+
+      setSyncError(error ? 'Supabase save failed. Check the table policies, then try again.' : '')
+    }, 450)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [data, remoteReady])
 
   useEffect(() => {
     function handleHashChange() {
@@ -252,8 +313,8 @@ function App() {
   }, [])
 
   const activeForm = useMemo(
-    () => data.forms.find((form) => form.id === activeFormId) || data.forms[0],
-    [activeFormId, data.forms],
+    () => data?.forms.find((form) => form.id === activeFormId) || data?.forms[0],
+    [activeFormId, data],
   )
 
   const access = useMemo(() => {
@@ -274,8 +335,8 @@ function App() {
   }, [activeForm, hashAccess])
 
   const formResponses = useMemo(
-    () => data.responses.filter((response) => response.formId === activeForm?.id),
-    [activeForm, data.responses],
+    () => data?.responses.filter((response) => response.formId === activeForm?.id) || [],
+    [activeForm, data],
   )
 
   const isRespondentOnly = access.role === 'respondent'
@@ -524,7 +585,7 @@ function App() {
       type: 'delete-form',
       formId,
       title: 'Delete form?',
-      message: `${form?.title || 'This form'} and its responses will be removed from this device.`,
+      message: `${form?.title || 'This form'} and its responses will be removed from Supabase.`,
       confirmLabel: 'Delete form',
       intent: 'danger',
     })
@@ -676,6 +737,18 @@ function App() {
     return () => window.removeEventListener('keydown', handleHistoryShortcut)
   }, [canEditForm, redoChange, undoChange])
 
+  if (isLoadingData) {
+    return (
+      <main className="app-shell access-screen">
+        <section className="access-panel">
+          <p className="eyebrow">Supabase</p>
+          <h1>Loading form</h1>
+          <p className="muted-text">Connecting to the shared database.</p>
+        </section>
+      </main>
+    )
+  }
+
   if (!activeForm) {
     return <main className="app-shell">No form found</main>
   }
@@ -792,6 +865,11 @@ function App() {
       </aside>
 
       <section className="workspace">
+        {syncError && (
+          <div className="sync-banner" role="status">
+            {syncError}
+          </div>
+        )}
         <header className="topbar">
           <div className="topbar-copy">
             <p className="eyebrow">{roleCopy[access.role]}</p>
@@ -1547,7 +1625,7 @@ function ResponsesView({ activeForm, responses }) {
     <section className="responses-view">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Saved locally</p>
+          <p className="eyebrow">Saved in Supabase</p>
           <h2>{filteredResponses.length} of {responses.length} responses</h2>
         </div>
         <form className="response-search" onSubmit={submitSearch}>

@@ -247,9 +247,25 @@
   overflow: hidden;
   padding: 24px;
   display: grid;
+  grid-auto-rows: auto;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 22px;
   align-content: stretch;
+}
+
+.sync-banner {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 80;
+  width: min(420px, calc(100vw - 36px));
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 205, 122, 0.36);
+  border-radius: 8px;
+  background: rgba(92, 59, 8, 0.24);
+  color: #ffe2aa;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .topbar {
@@ -1208,6 +1224,14 @@
   .workspace,
   .sidebar {
     padding: 16px;
+  }
+
+  .sync-banner {
+    top: 260px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    font-size: 12px;
   }
 
   .sidebar {
