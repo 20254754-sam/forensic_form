@@ -2,12 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Form ni Jerah</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      const isGitHubPages = window.location.hostname === '20254754-sam.github.io'
+      const basePath = isGitHubPages ? '/forensic_form/' : '/'
+
+      if (isGitHubPages) {
+        const stylesheet = document.createElement('link')
+        stylesheet.rel = 'stylesheet'
+        stylesheet.href = `${basePath}assets/app.css`
+        document.head.appendChild(stylesheet)
+      }
+
+      const script = document.createElement('script')
+      script.type = 'module'
+      script.src = isGitHubPages ? `${basePath}assets/app.js` : '/src/main.jsx'
+      document.body.appendChild(script)
+    </script>
   </body>
 </html>
